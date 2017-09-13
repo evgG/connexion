@@ -25,3 +25,15 @@ class Hero(Base):
 
     def serialize(self):
         return dict(id=self.id, name=self.name,)
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    login = Column(String, nullable=False, unique=True)
+    password = Column(String, nullable=False)
+
+    def __init__(self, login, password):
+        self.login = login
+        self.password = password

@@ -1,7 +1,23 @@
 import connexion
-from hero import Hero, init_db
+from model import Hero, User, init_db
+from flask import jsonify
+from flask_jwt import JWT, jwt_required, current_identity
 
 db_uri = 'sqlite:///app.sqlite'
+
+
+# jwt helpers
+def authenticate(username, password=None):
+    user = (db_session.query(User).
+            filter(User.login == username).
+            filter(User.password == password).one_or_none())
+    return user
+
+
+def identity(payload):
+    # print(payload)
+    return (db_session.query(User).
+            filter(User.id == payload['identity']).one_or_none())
 
 
 def post_greeting(name):
@@ -57,4 +73,27 @@ app = connexion.FlaskApp(__name__, specification_dir='swagger/')
 #                          swagger_ui=False)
 db_session = init_db(db_uri)
 app.add_api('your_api.yaml')
+
+
+@app.route('/unprotected')
+def unprotected():
+    return jsonify({
+        'message': 'This is an unprotected resource.'
+    })
+
+
+@app.route('/protected')
+@jwt_required()
+def protected():
+    return jsonify({
+        'message': 'This is a protected resource.',
+        'current_identity': str(current_identity)
+    })
+
+
+app.app.debug = True
+app.app.config['SECRET_KEY'] = 'super-secret'
+
+jwt = JWT(app.app, authenticate, identity)
+
 app.run(port=8080)
